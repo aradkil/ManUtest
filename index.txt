@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Running Timer - Levels</title>
+    <title>Pro Running Timer - Voice Levels</title>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -93,11 +93,16 @@
         oscillator.stop(audioCtx.currentTime + 0.6);
     }
 
-    function speakSync(text) {
+    function speakSync(text, callback) {
         window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
-        utterance.rate = 1.4; 
+        utterance.rate = 1.3; 
+        
+        if (callback) {
+            utterance.onend = callback;
+        }
+        
         window.speechSynthesis.speak(utterance);
     }
 
@@ -129,26 +134,33 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
         startBtn.disabled = true;
         pauseBtn.disabled = false;
-        if (!isPaused) {
-            currentRound = 1;
-            startRound();
-        } else {
+        
+        if (isPaused) {
             isPaused = false;
             runTimer();
+        } else {
+            currentRound = 1;
+            startRound(); // התחלה נקייה של שלב 1
         }
     }
 
     function startRound() {
         isRunningUp = true;
-        timeLeft = getTimes(currentRound).up;
+        const times = getTimes(currentRound);
+        timeLeft = times.up;
         statusEl.innerText = "RUN!";
-        updateUI();
-        // הכרזה על מספר השלב בתחילת כל סבב
-        speakSync("Level " + currentRound);
-        runTimer();
+        timerEl.innerText = timeLeft < 10 ? "0" + timeLeft : timeLeft;
+        roundEl.innerText = `Round: ${currentRound} / 40`;
+
+        // אומר "Level X" ורק אז מתחיל
+        speakSync("Level " + currentRound, () => {
+            // השהייה קטנטנה אחרי הדיבור כדי שיהיה ברור
+            setTimeout(runTimer, 200);
+        });
     }
 
     function runTimer() {
+        clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             timeLeft--;
             updateUI();
@@ -162,18 +174,20 @@
     function handlePhaseSwitch() {
         const times = getTimes(currentRound);
         if (isRunningUp) {
+            // סיימנו ריצה, עוברים לחזרה
             isRunningUp = false;
             timeLeft = times.back;
             statusEl.innerText = "RETURN";
             updateUI();
             runTimer();
         } else {
+            // סיימנו שלב מלא (הלוך וחזור), עוברים לשלב הבא
             currentRound++;
             if (currentRound > 40) {
                 statusEl.innerText = "FINISHED!";
                 pauseBtn.disabled = true;
             } else {
-                startRound();
+                startRound(); // כאן תתבצע ההכרזה על השלב החדש
             }
         }
     }
