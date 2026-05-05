@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Running Timer - Sync Voice</title>
+    <title>Pro Running Timer - Levels</title>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -78,8 +78,8 @@
     const startBtn = document.getElementById('start-btn');
     const pauseBtn = document.getElementById('pause-btn');
 
-    // מנוע שריקה
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
     function playWhistle() {
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
@@ -93,13 +93,11 @@
         oscillator.stop(audioCtx.currentTime + 0.6);
     }
 
-    // פונקציית דיבור מהירה ללא דיליי
     function speakSync(text) {
-        window.speechSynthesis.cancel(); // מבטל דיבורים קודמים שתקועים בתור
+        window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
-        utterance.rate = 1.4; // דיבור מהיר יותר כדי להספיק בתוך השנייה
-        utterance.volume = 1;
+        utterance.rate = 1.4; 
         window.speechSynthesis.speak(utterance);
     }
 
@@ -133,12 +131,20 @@
         pauseBtn.disabled = false;
         if (!isPaused) {
             currentRound = 1;
-            isRunningUp = true;
-            timeLeft = getTimes(currentRound).up;
-            statusEl.innerText = "RUN!";
-            updateUI();
+            startRound();
+        } else {
+            isPaused = false;
+            runTimer();
         }
-        isPaused = false;
+    }
+
+    function startRound() {
+        isRunningUp = true;
+        timeLeft = getTimes(currentRound).up;
+        statusEl.innerText = "RUN!";
+        updateUI();
+        // הכרזה על מספר השלב בתחילת כל סבב
+        speakSync("Level " + currentRound);
         runTimer();
     }
 
@@ -167,11 +173,7 @@
                 statusEl.innerText = "FINISHED!";
                 pauseBtn.disabled = true;
             } else {
-                isRunningUp = true;
-                timeLeft = getTimes(currentRound).up;
-                statusEl.innerText = "RUN!";
-                updateUI();
-                runTimer();
+                startRound();
             }
         }
     }
